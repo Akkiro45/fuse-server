@@ -1,0 +1,9 @@
+Email verification
+phoneNumber verification
+get latitude
+get longitude
+Security (transaction, data trafer)
+change status.type = 0 to orderd type in listing orders for customer
+
+Note
+1.If customer alreay have created shop and create new shop than old shop is just removed from customer and newly created shop become active.

@@ -1,0 +1,188 @@
+const mongoose = require('mongoose');
+
+const ShopSchema = new mongoose.Schema({
+  shopName: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 120
+  },
+  shopAddress: [
+    {
+      country: {
+        type: String,
+        default: 'India'
+      },
+      state: {
+        type: String,
+        required: true,
+        trim: true
+      },
+      city: {
+        type: String,
+        required: true,
+        trim: true
+      },
+      pincode: {
+        type: String,
+        required: true,
+        minlength: 6,
+        maxlength: 6
+      },
+      landmark: {
+        type: String,
+        trim: true
+      },
+      streetAdd: {
+        type: String,
+        trim: true,
+        required: true
+      },
+      latitude: {
+        type: String,
+        required: true
+      },
+      longitude: {
+        type: String,
+        required: true
+      },
+      valid: {
+        type: Boolean,
+        required: true
+      }
+    }
+  ],
+  items: [
+    {
+      name: { type: String, required: true, trim: true },
+      category: { type: String, required: true, trim: true },
+      mUnit: { type: String, required: true, trim: true },
+      mValue: { type: String, required: true, trim: true, default: 1 },
+      price: { type: Number, required: true},
+      photo: {
+        name: { type: String, required: true },
+        type: { type: String, required: true, trim: true}
+      },
+      description: {
+        type: String,
+        trim: true
+      }
+    }
+  ],
+  shopCategories: [
+    {
+      category: {
+        type: String,
+        required: true,
+        trim: true,
+        maxlength: 120
+      }
+    }
+  ],
+  shopSrchName: {
+    type: String,
+    required: true,
+    trim: true,
+    unique: true,
+    maxlength: 120
+  },
+  shopPhotos: [
+    {
+      name: { type: String, required: true },
+      type: { type: String, required: true, trim: true}
+    }
+  ],
+  timings: [
+    {
+      from: {
+        time: { type: String, required: true },
+        unit : { type: String, required: true }
+      },
+      to: {
+        time: { type: String, required: true },
+        unit : { type: String, required: true }
+      },
+    }
+  ],
+  isStatic: {
+    type: Boolean,
+    required: true,
+    default: true
+  },
+  orders: [
+    {
+      orderID: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true
+      }
+    }
+  ],
+  status: {
+    type: Boolean,
+    default: true
+  },
+  deliveryCharge: {
+    type: Number,
+    default: 0
+  },
+  deliveryAddTages: [
+    {
+      tag: {
+        type: String,
+        trim: true
+      }
+    }
+  ],
+  owner: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true
+  },
+  phoneNumber: {
+    type: Number,
+    minlength: 10,
+    maxlength: 10
+  },
+  socialLinks: [
+    {
+      link: { type: String, required: true },
+      type: { type: String, required: true }
+    }
+  ],
+  description: {
+    type: String,
+    trim: true
+  },
+  itemCategories: [
+    {
+      category: {
+        type: String,
+        trim: true
+      }
+    }
+  ]
+});
+
+ShopSchema.statics.editShop = function(body, id) {
+  const Shop = this;
+
+  return Shop.findById(id)
+    .then((shop) => {
+      Object.keys(body).forEach(key => {
+        shop[key] = body[key];
+      });
+      return shop.save();
+    })
+}
+
+// ShopSchema.post('update', function() {
+//   let shop = this;
+//   const order = shop.getUpdate().$push;
+//   if(order) {
+//     if(order.orders.orderID)
+//       console.log('Order added to cart and id is ', order.orders.orderID);
+//   }
+// });
+
+const Shop = mongoose.model('Shop', ShopSchema);
+
+module.exports = Shop;
