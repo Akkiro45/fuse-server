@@ -9,6 +9,13 @@ const OrderSchama = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     required: true
   },
+  shopName: {
+    type: String
+  },
+  deliveryCharge: {
+    type: Number,
+    default: 0
+  },
   status: [
     {
       type: {
@@ -35,7 +42,7 @@ const OrderSchama = new mongoose.Schema({
   },
   addressID: {
     type: mongoose.Schema.Types.ObjectId,
-    required: true
+    // required: true
   },
   items: [
     {

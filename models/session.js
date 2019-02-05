@@ -40,6 +40,23 @@ SessionSchema.statics.updateSession = function(sessionID, data, flag, prop) {
     })
 }
 
+SessionSchema.statics.updateUserSession = function(sessionID, data, prop) {
+  const Session = this;
+  let body;
+  return Session.findById(sessionID)
+    .lean()
+    .select({ data: 1 })
+    .then(s => {
+      body = JSON.parse(s.data);
+      body[prop] = data;
+      const stringData = JSON.stringify(body);
+      return Session.update({ _id: sessionID }, {
+        $set: {
+          data: stringData
+        }
+      });
+    })
+}
 
 const Session = mongoose.model('Session', SessionSchema);
 

@@ -9,6 +9,162 @@ const User = require('../models/user');
 
 const router = express.Router();
 
+// router.post('/create-order', authenticate, (req, res) => {
+//   let valid = true;
+//   let validAddress = false;
+//   let resBody = {};
+//   let error = {};
+//   let result;
+//   let shop, tempItems, items, temp;
+//   let body = _.pick(req.body, ['shopID', 'addressID', 'items']);
+//   if(!(body.shopID && body.addressID && body.items)) valid = valid && false;
+//   req.user.address.forEach((address) => {
+//     if(address._id.toHexString() === body.addressID) {
+//       validAddress = true;
+//     }
+//   });
+//   if(!validAddress) {
+//     valid = valid && false;
+//     error.addressID = 'Invalid';
+//   }
+//   if(valid) {
+//     try {
+//       Shop.findById(body.shopID)
+//         .lean()
+//         .select({ items: 1, shopName: 1, deliveryCharge: 1 })
+//         .then((shopItems) => {
+//           tempItems = shopItems.items.filter((item1) => {
+//             return body.items.some((item2) => {
+//               return item1._id.toHexString() === item2.itemID;
+//             });
+//           });
+//           if(tempItems.length === 0) {
+//             error.items = 'Can not create order with zero items';
+//             resBody.error = error;
+//             resBody.status = 'error';
+//             return res.status(400).send(resBody);
+//           }
+//           items = _.map(tempItems, (item) => {
+//             temp = body.items.find((itm) => {
+//               return itm.itemID === item._id.toHexString();
+//             })
+//             if(temp.quantity) return _.extend({}, item, {quantity: temp.quantity});
+//             else {
+//               error.quantity = 'Item Quantity not specified';
+//               resBody.error = error;
+//               resBody.status = 'error';
+//               throw resBody;
+//             }
+//           });
+//           result = calcCostAndQuan(items);
+//           body.quantity = result.quantity;
+//           body.totalCost = result.totalCost;
+//           body.deliveryCharge = shopItems.deliveryCharge;
+//           body.shopName = shopItems.shopName;
+//           body.userID = req.user._id;
+//           body.status = [{ type: 0, timeStamp: new Date().getTime() }];
+//           body.items = items;
+//           const order = new Order(body);
+//           order.save()
+//             .then(order => {
+//               if(order) {
+//                 User.update({ _id: body.userID }, {
+//                   $push: { orders: { orderID: order._id } }
+//                 })
+//                   .then(r => {
+//                     if(r.ok === 1) {
+//                       Shop.update({ _id: body.shopID }, {
+//                         $push: { orders: { orderID: order._id } }
+//                       })
+//                         .then(rs => {
+//                           if(rs.ok === 1) {
+//                             resBody.data = order;
+//                             resBody.status = 'ok';
+//                             return res.send(resBody);
+//                           }
+//                         })
+//                         .catch(e => {
+//                           User.findByIdAndUpdate(body.userID, {
+//                             $pop: { orders: 1 } })
+//                             .then((response) => {
+//                               Order.findByIdAndRemove(order._id)
+//                                 .then(() => {
+//                                   error.shop = 'Unable to store order in shop';
+//                                   error.e = e.errmsg;
+//                                   resBody.error = error;
+//                                   resBody.status = 'error';
+//                                   return res.status(400).send(resBody);
+//                                 })
+//                                 .catch((e) => {
+//                                   error.order = 'Unable to delete order';
+//                                   error.e = e.errmsg;
+//                                   resBody.error = error;
+//                                   resBody.status = 'error';
+//                                   return res.status(500).send(resBody);
+//                                 })
+//                             })
+//                             .catch(e => {
+//                               error.order = 'Unable to delete orderID from user';
+//                               error.e = e.errmsg;
+//                               resBody.error = error;
+//                               resBody.status = 'error';
+//                               return res.status(500).send(resBody);
+//                             })
+//                         })
+//                     } else {
+//                       throw resBody;
+//                     }
+//                   })
+//                   .catch(e => {
+//                     Order.findByIdAndRemove(order._id)
+//                       .then(() => {
+//                         error.user = 'Unable to store order in user';
+//                         error.e = e.errmsg;
+//                         resBody.error = error;
+//                         resBody.status = 'error';
+//                         return res.status(400).send(resBody);
+//                       })
+//                       .catch(e => {
+//                         error.e = e.errmsg;
+//                         resBody.error = error;
+//                         resBody.status = 'error';
+//                         return res.status(400).send(resBody);
+//                       })
+//                   })
+//               } else {
+//                 error.order = 'Unable to create order';
+//                 resBody.status = 'error';
+//                 resBody.error = error;
+//                 throw resBody;
+//               }
+//             })
+//             .catch(e => {
+//               error.order ='Unable to store order';
+//               error.e = e.errmsg;
+//               resBody.error = error;
+//               resBody.status = 'error';
+//               return res.status(400).send(resBody);
+//             })
+//         })
+//         .catch((e) => {
+//           error.shopID = 'Inavlid';
+//           error.e = e.errmsg;
+//           resBody.error = error;
+//           resBody.status = 'error';
+//           return res.status(400).send(resBody);
+//         });
+//     }
+//     catch(e) {
+//       return res.status(400).send(e);
+//     }
+//   } else {
+//     error.msg =  'Invalid data';
+//     resBody.error = error;
+//     resBody.status = 'error';
+//     return res.status(400).send(resBody);
+//   }
+// });
+
 router.post('/create-order', authenticate, (req, res) => {
   let valid = true;
   let validAddress = false;
@@ -16,22 +172,13 @@ router.post('/create-order', authenticate, (req, res) => {
   let error = {};
   let result;
   let shop, tempItems, items, temp;
-  let body = _.pick(req.body, ['shopID', 'addressID', 'items']);
-  if(!(body.shopID && body.addressID && body.items)) valid = valid && false;
-  req.user.address.forEach((address) => {
-    if(address._id.toHexString() === body.addressID) {
-      validAddress = true;
-    }
-  });
-  if(!validAddress) {
-    valid = valid && false;
-    error.addressID = 'Invalid';
-  }
+  let body = _.pick(req.body, ['shopID', 'items']);
+  if(!(body.shopID && body.items)) valid = valid && false;
   if(valid) {
     try {
       Shop.findById(body.shopID)
         .lean()
-        .select({ items: 1 })
+        .select({ items: 1, shopName: 1, deliveryCharge: 1 })
         .then((shopItems) => {
           tempItems = shopItems.items.filter((item1) => {
             return body.items.some((item2) => {
@@ -59,6 +206,8 @@ router.post('/create-order', authenticate, (req, res) => {
           result = calcCostAndQuan(items);
           body.quantity = result.quantity;
           body.totalCost = result.totalCost;
+          body.deliveryCharge = shopItems.deliveryCharge;
+          body.shopName = shopItems.shopName;
           body.userID = req.user._id;
           body.status = [{ type: 0, timeStamp: new Date().getTime() }];
           body.items = items;
@@ -76,7 +225,7 @@ router.post('/create-order', authenticate, (req, res) => {
                       })
                         .then(rs => {
                           if(rs.ok === 1) {
-                            resBody.data = order;
+                            // resBody.data = order;
                             resBody.status = 'ok';
                             return res.send(resBody);
                           }
@@ -281,7 +430,7 @@ const calcCostAndQuan = (items) => {
   let cost = 0;
   let quan = 0;
   items.forEach(item => {
-    cost = (cost + item.price) * item.quantity;
+    cost = cost + (item.price * item.quantity);
     quan = quan + item.quantity;
   });
   return{ totalCost: cost, quantity: quan };

@@ -4,6 +4,7 @@ const _ = require('lodash');
 const User = require('../models/user');
 const Shop = require('../models/shop');
 const Order = require('../models/order');
+const Session = require('../models/session');
 const {authenticate} = require('../middlewares/authenticate');
 const {userOrderChecker} = require('../middlewares/user-order-checker');
 const {emailVerification} = require('./../utility/email-verification');
@@ -17,7 +18,9 @@ const router = express.Router();
 router.post('/signup', (req, res) => {
   let resBody = {};
   let error = {};
+  let data = {};
   let body = _.pick(req.body, ['firstName', 'lastName', 'phoneNumber', 'email', 'password']);
+  data = _.pick(body, ['firstName', 'lastName', 'phoneNumber', 'email']);
   if(body.password && body.phoneNumber) {
     let isEmail = true;
     let isNumber = false;
@@ -30,12 +33,31 @@ router.post('/signup', (req, res) => {
       body.createdAt = new Date().getTime();
       const user = new User(body);
       user.save()
-        .then(() => {
+        .then((u) => {
           user.generateAuthToken()
             .then((token) => {
               resBody.status = 'ok';
               resBody.data = pickData(user);
-              return res.header('x-auth', token).send(resBody);
+              data.token = token;
+              data.userID = u._id;
+              resBody.data.userID = u._id;
+              Session.saveSession(data)
+                .then(ss => {
+                  resBody.sessionID = ss._id;
+                  return res.set({
+                    'Access-Control-Expose-Headers': 'x-auth',
+                    'x-auth': token
+                  }).send(resBody);
+                })
+                .catch(e => {
+                  error.msg = 'Unable to save session';
+                  resBody.error = error;
+                  return res.set({
+                    'Access-Control-Expose-Headers': 'x-auth',
+                    'x-auth': token
+                  }).send(resBody);
+                });
+              // return res.header('x-auth', token).send(resBody);
             })
             .catch(e => {
               error.e = e.errmsg;
@@ -47,7 +69,7 @@ router.post('/signup', (req, res) => {
         })
         .catch(e => {
           error.msg = 'User already exist';
-          error.e = e.errmsg || e.message;
+          // error.e = e.errmsg || e.message;
           resBody.error = error;
           resBody.status = 'error';
           return res.status(400).send(resBody);
@@ -72,6 +94,7 @@ router.post('/login', (req, res) => {
   let param = body.phoneNumber;
   let resBody = {};
   let error = {};
+  let data = {};
   if(body.email) {
     byEmail = true;
     param = body.email;
@@ -80,10 +103,31 @@ router.post('/login', (req, res) => {
     .then(user => {
       resBody.data = pickData(user);
       resBody.status = 'ok';
+      resBody.data.userID = user._id;
+      resBody.data.address = user.address.filter(ad => ad.valid !== false);
+      data = {...resBody.data};
+      data.userID = user._id;
       return user.generateAuthToken()
     })
     .then(token => {
-      return res.header('x-auth', token).send(resBody);
+      data.token = token;
+      Session.saveSession(data)
+        .then(ss => {
+          resBody.sessionID = ss._id;
+          return res.set({
+            'Access-Control-Expose-Headers': 'x-auth',
+            'x-auth': token
+          }).send(resBody);
+        })
+        .catch(e => {
+          error.msg = 'Unable to save session';
+          resBody.error = error;
+          return res.set({
+            'Access-Control-Expose-Headers': 'x-auth',
+            'x-auth': token
+          }).send(resBody);
+        });
+      // return res.header('x-auth', token).send(resBody);
     })
     .catch(e => {
       error.msg = 'Invalid credentials!';
@@ -94,34 +138,21 @@ router.post('/login', (req, res) => {
 });
 
 router.get('/me', authenticate, (req, res) => {
-  // req.session.status = req.user._id;
   let resBody = {};
   resBody.data = pickData(req.user);
   resBody.status = 'ok';
   return res.header('x-auth', req.token).send(resBody);
 });
 
-router.get('/data', authenticate, (req, res) => {
-  let resBody = {};
-  let error = {};
-  if(req.session) {
-    resBody.data = req.session;
-    resBody.status = 'ok';
-    return res.send(resBody);
-  } else {
-    error.msg = 'No session was created';
-    resBody.error = error;
-    resBody.status = error;
-    return res.status(404).send(resBody);
-  }
-})
-
-router.delete('/logout', authenticate, (req, res) => {
+router.delete('/logout/:sessionID', authenticate, (req, res) => {
   let resBody = {};
   req.user.removeToken(req.token)
     .then(() => {
-      resBody.status = 'ok';
-      return res.status(200).send(resBody);
+      Session.findByIdAndRemove(req.params.sessionID)
+        .then(() => {
+          resBody.status = 'ok';
+          return res.status(200).send(resBody);
+        })
     })
     .catch(e => {
       resBody.status = 'error';
@@ -147,16 +178,23 @@ router.patch('/change-password', authenticate, (req, res) => {
 });
 
 router.post('/add-address', authenticate, (req, res) => {
+  let sessionID = req.body.sessionID;
   let resBody = {};
   let error = {};
-  let body = _.pick(req.body, ['state', 'city', 'pincode', 'landmark', 'streetAdd', 'fullName', 'phoneNumber']);
+  let body = _.pick(req.body, ['state', 'city', 'pincode', 'landmark', 'streetAdd', 'country']);
   let address = addressVerification(body);
   if(address.latitude && address.longitude) {
     req.user.addAddress(address)
       .then(r => {
-        resBody.status = 'ok';
-        resBody.data = 'Address added!';
-        return res.status(200).send(resBody);
+        Session.updateUserSession(sessionID, r.address, 'address')
+          .then(rsp => {
+            resBody.status = 'ok';
+            resBody.data = r.address[r.address.length - 1];
+            return res.status(200).send(resBody);
+          })
+          .catch(e => {
+            throw new Error();
+          });
       })
       .catch(e => {
         error.msg = 'error while saving.';
@@ -167,6 +205,43 @@ router.post('/add-address', authenticate, (req, res) => {
       });
   } else {
     error.msg = 'Invalid address.';
+    resBody.error = error;
+    resBody.status = 'error';
+    return res.status(400).send(resBody);
+  }
+});
+
+router.post('/rmv-address', authenticate, (req, res) => {
+  let resBody = {};
+  let error = {};
+  let body = _.pick(req.body, ['addressID', 'sessionID']);
+  let address = addressVerification(body);
+  let adds;
+  if(address.addressID && address.sessionID) {
+    req.user.removeAddress(body.addressID)
+      .then(r => {
+        adds = r.address.filter(ad => ad.valid !== false);
+        Session.updateUserSession(body.sessionID, adds, 'address')
+          .then(rsp => {
+            resBody.status = 'ok';
+            resBody.data = {
+              _id: body.addressID
+            }
+            return res.status(200).send(resBody);
+          })
+          .catch(e => {
+            throw new Error();
+          });
+      })
+      .catch(e => {
+        error.msg = 'error while saving.';
+        error.e = e.message;
+        resBody.error = error;
+        resBody.status = 'error';
+        return res.status(400).send(resBody);
+      });
+  } else {
+    error.msg = 'Invalid data.';
     resBody.error = error;
     resBody.status = 'error';
     return res.status(400).send(resBody);
@@ -191,15 +266,33 @@ router.get('/get-address', authenticate, (req, res) => {
     });
 });
 
-router.get('/shops', authenticate, (req,res) => {
+
+
+router.post('/shops', (req,res) => {
   let resBody = {};
   let error = {};
   const pageNumber = parseInt(req.query.pageNumber);
   const pageSize = parseInt(req.query.pageSize);
-  Shop.find()
+  const body = req.body;
+  let query = {
+    status: true
+  };
+  if(body.delivery) {
+    query.isStatic = false;
+  }
+  if(body.address) {
+    query.$text = { $search: body.address };
+  }
+  if(body.shopSrchName) {
+    query.$text = { $search: body.shopSrchName };
+  }
+  if(body.shopCategories) {
+    query['shopCategories.category'] = body.shopCategories;
+  }
+  Shop.find(query)
     .skip((pageNumber - 1) * pageSize)
     .limit(pageSize)
-    .select({ shopName: 1, shopAddress: 1, shopCategories: 1, shopSrchName: 1, shopPhotos: 1, isStatic: 1, description: 1 })
+    .select({ shopName: 1, shopAddress: 1, shopCategories: 1, shopSrchName: 1, shopPhotos: 1, isStatic: 1 })
     .then(shops => {
       resBody.data = shops;
       resBody.status = 'ok';
@@ -214,8 +307,167 @@ router.get('/shops', authenticate, (req,res) => {
     });
 });
 
+router.get('/shop', (req, res) => {
+  let resBody = {};
+  let error = {};
+  const shopSrchName = req.query.shopSrchName;
+  Shop.findOne({ shopSrchName, status: true })
+    .select({ shopName: 1, shopAddress: 1, items: 1, shopCategories: 1, shopSrchName: 1, shopPhotos: 1, isStatic: 1, deliveryCharge: 1, phoneNumber: 1, socialLinks: 1, description: 1, itemCategories: 1 })
+    .then(shop => {
+      if(shop) {
+        resBody.data = shop;
+        resBody.status = 'ok';
+        return res.send(resBody);
+      } else {
+        error.shop = 'Unable to find shop';
+        resBody.error = error;
+        resBody.status = 'error';
+        return res.status(404).send(resBody);
+      }
+    })
+    .catch(e => {
+      error.shop = 'Unable to find shop';
+      resBody.error = error;
+      resBody.status = 'error';
+      return res.status(404).send(resBody);
+    });
+});
+
+router.get('/cart', authenticate, (req, res) => {
+  let resBody = {};
+  let error = {};
+  let query = {
+    userID: req.user._id,
+    'status.type': {
+      $eq: 0,
+      $nin: [1, 2, 3, 4, 5, 6]
+    }
+  };
+  let sort = {
+    'status.timeStamp': -1
+  }
+  Order.find(query)
+    .sort(sort)
+    .then(orders => {
+      if(orders) {
+        resBody.data = orders;
+        resBody.status = 'ok';
+        return res.send(resBody);
+      } else {
+        throw new Error();
+      }
+    })
+    .catch(error => {
+      error.msg = 'Orders not found!';
+      resBody.error = error;
+      resBody.status = 'error';
+      return res.status(400).send(resBody);
+    });
+});
+
+router.get('/orders', authenticate, (req, res) => {
+  const pageNumber = parseInt(req.query.pageNumber);
+  const pageSize = parseInt(req.query.pageSize);
+  let resBody = {};
+  let error = {};
+  let query = {
+    userID: req.user._id,
+    'status.type': {
+      $in: [2, 3, 4, 5, 6]
+    }
+  };
+  let sort = {
+    'status.timeStamp': -1
+  }
+  Order.find(query)
+    .lean()
+    .skip((pageNumber - 1) * pageSize)
+    .limit(pageSize)
+    .sort(sort)
+    .then(orders => {
+      if(orders) {
+        User.getData(orders)
+          .then(ords => {
+            resBody.data = orders.map((order, i) => {
+              userData = ords.find(o => {
+                return o._id.toHexString() === order.userID.toHexString()
+              });
+              order.address = userData.address[0],
+              order.firstName = userData.firstName,
+              order.lastName = userData.lastName,
+              order.phoneNumber = userData.phoneNumber
+              return order;
+            });
+            resBody.status = 'ok';
+            return res.send(resBody);
+          })
+          .catch(e => {
+            error.shop = 'Something went wrong!';
+            resBody.error = error;
+            resBody.status = 'error';
+            return res.status(400).send(resBody);
+          });
+      } else {
+        throw new Error();
+      }
+    })
+    .catch(error => {
+      error.msg = 'Orders not found!';
+      resBody.error = error;
+      resBody.status = 'error';
+      return res.status(400).send(resBody);
+    });
+});
+
+router.delete('/del/order', authenticate, (req, res) => {
+  const body = _.pick(req.body, ['orderID']);
+  let resBody = {};
+  let error = {};
+  const query = {
+    _id: body.orderID,
+    'status.type': {
+      $nin: [1, 2, 3, 4, 5, 6]
+    },
+    userID: req.user._id
+  };
+  if(body.orderID) {
+    Order.findOneAndRemove(query)
+      .then(o => {
+        if(o) {
+          const user = User.removeOrder(o.userID, body.orderID);
+          const shop = Shop.removeOrder(o.shopID, body.orderID);
+          Promise.all([user, shop])
+            .then(r => {
+              resBody.status = 'ok';
+              resBody.data = o._id;
+              return res.send(resBody);
+            })
+            .catch(e => {
+              error.msg = 'Unable to delete';
+              resBody.error = error;
+              resBody.status = 'error';
+              return res.status(400).send(resBody);
+            });
+        } else {
+          throw new Error();
+        }
+      })
+      .catch(e => {
+        error.msg = 'Unable to delete';
+        resBody.error = error;
+        resBody.status = 'error';
+        return res.status(400).send(resBody);
+      });
+  } else {
+    error.msg = 'Order ID required';
+    resBody.error = error;
+    resBody.status = 'error';
+    return res.status(400).send(resBody);
+  }
+});
+
 router.post('/status', authenticate, userOrderChecker, (req, res) => {
-  let body = _.pick(req.body, ['type', 'userMsg', 'orderID']);
+  let body = _.pick(req.body, ['type', 'userMsg', 'addressID', 'orderID']);
   let resBody = {};
   let error = {};
   let valid = true;
@@ -223,6 +475,9 @@ router.post('/status', authenticate, userOrderChecker, (req, res) => {
   let time = 0;
   let removed = false, ordered = false, cancelled = false, deliverd = false, accepted = false, rejected = false;
   if(!(body.type && body.orderID)) valid = valid && false;
+  if(body.type === 2) {
+    if(!body.addressID) valid = valid && false;
+  }
   if(body.type === 3) {
     if(!body.userMsg) body.userMsg = '';
   }
@@ -242,8 +497,11 @@ router.post('/status', authenticate, userOrderChecker, (req, res) => {
               time = parseInt(s.timeStamp);
             }
           });
-          if((body.type === 1 && !removed && !ordered && !cancelled) || (body.type === 2 && !removed && !ordered && !cancelled)) {
+          if((body.type === 1 && !removed && !ordered && !cancelled)) {
             updateStatus.$push = { status: { type: body.type, timeStamp: new Date().getTime() } };
+          } else if(body.type === 2 && !removed && !ordered && !cancelled) {
+              updateStatus.$push = { status: { type: body.type, timeStamp: new Date().getTime() } };
+              updateStatus.addressID = body.addressID;
           } else if(body.type === 3 && !removed && ordered && !cancelled && !deliverd && !rejected) {
             updateStatus.$push = { status: { type: body.type, timeStamp: new Date().getTime() } };
             updateStatus.$set = { userMsg: body.userMsg };

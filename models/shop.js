@@ -162,6 +162,28 @@ const ShopSchema = new mongoose.Schema({
   ]
 });
 
+ShopSchema.index({
+  shopName: 'text',
+  shopCategories: 'text',
+  'shopCategories.country': 'text',
+  'shopCategories.state': 'text',
+  'shopCategories.city': 'text',
+  'shopCategories.pincode': 'text',
+  'shopCategories.landmark': 'text',
+  'shopCategories.streetAdd': 'text'
+});
+
+ShopSchema.statics.removeOrder = function(shopID, orderID) {
+  const Shop = this;
+  return Shop.findByIdAndUpdate(shopID, {
+    $pull: {
+      orders: {
+        orderID
+      }
+    }
+  });
+}
+
 ShopSchema.statics.editShop = function(body, id) {
   const Shop = this;
 

@@ -144,6 +144,29 @@ UserSchema.methods.addAddress = function(address) {
   user.address = user.address.concat([address]);
   return user.save();
 }
+UserSchema.methods.removeAddress = function(addressID) {
+  const user = this;
+  let address = [...user.address];
+  for(let i=0; i<address.length; i++) {
+    if(address[i]._id.toHexString() === addressID) {
+      address[i].valid = false;
+      break;
+    }
+  }
+  user.address = address;
+  return user.save();
+}
+
+UserSchema.statics.removeOrder = function(userID, orderID) {
+  const User = this;
+  return User.findByIdAndUpdate(userID, {
+    $pull: {
+      orders: {
+        orderID
+      }
+    }
+  });
+}
 
 UserSchema.statics.getData = function(orders) {
   let User = this;
