@@ -65,21 +65,6 @@ const OrderSchama = new mongoose.Schema({
       }
     }
   ],
-  userMsg: {
-    type: String,
-    trim: true,
-    maxlength: 200,
-  },
-  custAcceptMsg: {
-    type: String,
-    trim: true,
-    maxlength: 200,
-  },
-  custRejectMsg: {
-    type: String,
-    trim: true,
-    maxlength: 200,
-  },
   deliveryTime: {
     from: {
       type: String
@@ -88,23 +73,12 @@ const OrderSchama = new mongoose.Schema({
       type: String
     }
   },
-  expirationTime: { // Number of mileseconds
-    type: Number,
-    default: 0
+  allowCancelOrder: {
+    type: Boolean,
+    default: false
   }
 });
 
-// OrderSchama.post('update', function() {
-//   let order = this;
-//   const o = order.getUpdate().$push;
-//   const o1 = order.getUpdate().$set;
-//   if(o.status.type === 2) {
-//     console.log('Order arrived.');
-//   }
-//   if(o.status.type === 3) {
-//     console.log('Order cancelled because ', o1.userMsg);
-//   }
-// });
 
 const Order = mongoose.model('Order', OrderSchama);
 

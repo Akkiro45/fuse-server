@@ -234,7 +234,7 @@ router.get('/orders', authenticate, (req, res) => {
       .lean()
       .skip((pageNumber - 1) * pageSize)
       .limit(pageSize)
-      .select({ userID: 1, status: 1, totalCost: 1, quantity: 1, addressID: 1, items: 1, userMsg: 1, custAcceptMsg: 1, custRejectMsg: 1, deliveryTime: 1, expirationTime: 1 })
+      .select({ userID: 1, status: 1, totalCost: 1, quantity: 1, addressID: 1, items: 1, deliveryTime: 1, allowCancelOrder: 1 })
       .sort({ 'status.timeStamp': -1 })
       .then(orders => {
         User.getData(orders)
@@ -277,27 +277,26 @@ router.get('/orders', authenticate, (req, res) => {
 });
 
 router.post('/status', authenticate, orderChecker, (req, res) => {
-  let body = _.pick(req.body, ['orderID', 'custAcceptMsg', 'custRejectMsg', 'deliveryTime', 'expirationTime', 'type']);
+  let body = _.pick(req.body, ['orderID', 'cancelOrder', 'deliveryTime', 'type']);
   let resBody = {};
   let error = {};
   let updateStatus = {};
+  let allowCancelOrder;
   let valid = true, ordered = false, cancelled = false, accepted = false, rejected = false, deliverd = false;
-  if(!body.custAcceptMsg) body.custAcceptMsg = ' ';
-  if(!body.custRejectMsg) body.custRejectMsg = ' ';
   if(body.orderID && body.type) {
     if(body.type === 4) {
-      if(!(body.custAcceptMsg && body.deliveryTime && body.expirationTime)) {
-        if(body.expirationTime !== 0)
-          valid = valid && false;
+      if(body.cancelOrder) {
+        allowCancelOrder = true;
+      } else {
+        allowCancelOrder = false;
       }
-    } else if (body.type === 5) {
-      if(!body.custRejectMsg) valid = valid && false;
-    } else if (body.type === 6) {
-      valid = valid && true;
-    } else {
-      valid = valid && false;
+      if(!body.deliveryTime) {
+        valid = valid && false;
+      }
     }
-  } else valid = valid && false;
+  } else {
+    valid = valid && false;
+  }
   if(valid) {
     Order.findById(body.orderID)
       .select({ status: 1 })
@@ -312,9 +311,8 @@ router.post('/status', authenticate, orderChecker, (req, res) => {
         if(ordered && !cancelled) {
           updateStatus.$push = { status: { type: body.type, timeStamp: new Date().getTime() } };
           if(body.type === 4 && !accepted && !rejected && !deliverd) {
-            updateStatus.$set = { custAcceptMsg: body.custAcceptMsg, expirationTime: body.expirationTime, deliveryTime: body.deliveryTime };
+            updateStatus.$set = { deliveryTime: body.deliveryTime, allowCancelOrder };
           } else if(body.type === 5 && !accepted && !rejected && !deliverd) {
-            updateStatus.$set = { custRejectMsg: body.custRejectMsg };
           } else if(!(body.type === 6 && accepted && !rejected && !deliverd)) {
             error.msg = 'Inapropriate request';
             resBody.error = error;
