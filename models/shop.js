@@ -92,18 +92,6 @@ const ShopSchema = new mongoose.Schema({
       type: { type: String, required: true, trim: true}
     }
   ],
-  timings: [
-    {
-      from: {
-        time: { type: String, required: true },
-        unit : { type: String, required: true }
-      },
-      to: {
-        time: { type: String, required: true },
-        unit : { type: String, required: true }
-      },
-    }
-  ],
   isStatic: {
     type: Boolean,
     required: true,
@@ -125,14 +113,6 @@ const ShopSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  deliveryAddTages: [
-    {
-      tag: {
-        type: String,
-        trim: true
-      }
-    }
-  ],
   owner: {
     type: mongoose.Schema.Types.ObjectId,
     required: true
@@ -195,15 +175,6 @@ ShopSchema.statics.editShop = function(body, id) {
       return shop.save();
     })
 }
-
-// ShopSchema.post('update', function() {
-//   let shop = this;
-//   const order = shop.getUpdate().$push;
-//   if(order) {
-//     if(order.orders.orderID)
-//       console.log('Order added to cart and id is ', order.orders.orderID);
-//   }
-// });
 
 const Shop = mongoose.model('Shop', ShopSchema);
 

@@ -45,7 +45,7 @@ router.get('/user/:id', (req, res) => {
       if(!session) throw 'Error';
       resBody.status = 'ok';
       body = JSON.parse(session.data);
-      resBody.address = body.address;
+      resBody.address = body.address.filter(ad => ad.valid !== false);
       resBody.userID = body.userID;
       resBody.firstName = body.firstName;
       resBody.lastName = body.lastName;

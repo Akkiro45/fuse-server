@@ -9,7 +9,7 @@ const Session = require('../models/session');
 const {addressVerification} = require('../utility/address-verification');
 const {numberVerification} = require('../utility/number-verification');
 const {authenticate} = require('../middlewares/customer-authenticate');
-const {pickShopData} = require('./../utility/utility');
+const {pickShopData, checkDomainName} = require('./../utility/utility');
 
 const router = express.Router();
 
@@ -49,18 +49,11 @@ router.post('/create-shop', authenticate,  (req, res) => {
     resBody.status = 'error';
     return res.status(400).send(resBody);
   }
-  let body = _.pick(req.body, ['owner', 'status', 'itemCategories','description', 'socialLinks', 'phoneNumber', 'shopName', 'shopAddress', 'shopSrchName', 'items', 'shopCategories', 'shopPhotos', 'timings', 'isStatic', 'deliveryCharge', 'deliveryAddTages']);
+  let body = _.pick(req.body, ['owner', 'status', 'itemCategories','description', 'socialLinks', 'phoneNumber', 'shopName', 'shopAddress', 'shopSrchName', 'items', 'shopCategories', 'shopPhotos', 'isStatic', 'deliveryCharge']);
   let valid = true;
   body.shopSrchName = body.shopSrchName.toLowerCase();
+  valid = valid && checkDomainName(body.shopSrchName);
   if(body.shopName && body.isStatic && body.shopSrchName) valid = valid && true;
-  if(body.timings) {
-    if(body.timings.length < 7 || body.timings.length > 7) {
-      valid = valid && false;
-      error.must = 'Timings must 0f 7 days only';
-      resBody.status = 'error';
-      resBody.error = error;
-    }
-  }
   let body1 = check(body, valid);
   body = body1.body;
   valid = body1.valid;

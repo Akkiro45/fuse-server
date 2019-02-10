@@ -109,26 +109,32 @@ router.post('/login', (req, res) => {
       data.userID = user._id;
       return user.generateAuthToken()
     })
-    .then(token => {
-      data.token = token;
-      Session.saveSession(data)
-        .then(ss => {
-          resBody.sessionID = ss._id;
-          return res.set({
-            'Access-Control-Expose-Headers': 'x-auth',
-            'x-auth': token
-          }).send(resBody);
-        })
-        .catch(e => {
-          error.msg = 'Unable to save session';
+      .then(token => {
+        if(token) {
+          data.token = token;
+          Session.saveSession(data)
+            .then(ss => {
+              resBody.sessionID = ss._id;
+              return res.set({
+                'Access-Control-Expose-Headers': 'x-auth',
+                'x-auth': token
+              }).send(resBody);
+            })
+            .catch(e => {
+              error.msg = 'Unable to save session';
+              resBody.error = error;
+              return res.set({
+                'Access-Control-Expose-Headers': 'x-auth',
+                'x-auth': token
+              }).send(resBody);
+            });
+        } else {
+          error.msg = 'More than 10 Concurrent user!';
+          resBody.status = 'error';
           resBody.error = error;
-          return res.set({
-            'Access-Control-Expose-Headers': 'x-auth',
-            'x-auth': token
-          }).send(resBody);
-        });
-      // return res.header('x-auth', token).send(resBody);
-    })
+          return res.status(400).send(resBody);
+        }
+      })
     .catch(e => {
       error.msg = 'Invalid credentials!';
       resBody.status = 'error';
@@ -266,8 +272,6 @@ router.get('/get-address', authenticate, (req, res) => {
     });
 });
 
-
-
 router.post('/shops', (req,res) => {
   let resBody = {};
   let error = {};
@@ -277,19 +281,31 @@ router.post('/shops', (req,res) => {
   let query = {
     status: true
   };
+  let sort = {};
   if(body.delivery) {
-    query.isStatic = false;
+    sort.isStatic = 1
   }
   if(body.address) {
     query.$text = { $search: body.address };
   }
   if(body.shopSrchName) {
-    query.$text = { $search: body.shopSrchName };
+    // query.$text = { $search: body.shopSrchName };
+    query.shopSrchName = {
+      // $regex: new RegExp(body.shopSrchName.replace(/\s+/g,"\\s+"), "gi"),
+      $regex: new RegExp(body.shopSrchName, "gi"),
+      $options: 'i'
+    }
+    query.shopName = {
+      // $regex: new RegExp(body.shopSrchName.replace(/\s+/g,"\\s+"), "gi"),
+      $regex: new RegExp(body.shopSrchName, "gi"),
+      $options: 'i'
+    }
   }
   if(body.shopCategories) {
     query['shopCategories.category'] = body.shopCategories;
   }
   Shop.find(query)
+    .sort(sort)
     .skip((pageNumber - 1) * pageSize)
     .limit(pageSize)
     .select({ shopName: 1, shopAddress: 1, shopCategories: 1, shopSrchName: 1, shopPhotos: 1, isStatic: 1 })

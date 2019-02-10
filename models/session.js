@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 
+const { expirationTime } = require('../utility/expiration-time');
+
 const SessionSchema = new mongoose.Schema({
   data: {
     type: String
@@ -7,7 +9,7 @@ const SessionSchema = new mongoose.Schema({
   expire_at: {
     type: Date,
     default: Date.now,
-    expires: 86400 // in seconds
+    expires: expirationTime/1000 // in seconds
   }
 });
 

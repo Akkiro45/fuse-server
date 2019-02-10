@@ -124,23 +124,30 @@ router.post('/login', (req, res) => {
       return cust.generateAuthToken()
     })
     .then(token => {
-      data.token = token;
-      Session.saveSession(data)
-        .then(ss => {
-          resBody.sessionID = ss._id;
-          return res.set({
-            'Access-Control-Expose-Headers': 'x-auth',
-            'x-auth': token
-          }).send(resBody);
-        })
-        .catch(e => {
-          error.msg = 'Unable to save session';
-          resBody.error = error;
-          return res.set({
-            'Access-Control-Expose-Headers': 'x-auth',
-            'x-auth': token
-          }).send(resBody);
-        });
+      if(token) {
+        data.token = token;
+        Session.saveSession(data)
+          .then(ss => {
+            resBody.sessionID = ss._id;
+            return res.set({
+              'Access-Control-Expose-Headers': 'x-auth',
+              'x-auth': token
+            }).send(resBody);
+          })
+          .catch(e => {
+            error.msg = 'Unable to save session';
+            resBody.error = error;
+            return res.set({
+              'Access-Control-Expose-Headers': 'x-auth',
+              'x-auth': token
+            }).send(resBody);
+          });
+      } else {
+        error.msg = 'More than 10 Concurrent user!';
+        resBody.status = 'error';
+        resBody.error = error;
+        return res.status(400).send(resBody);
+      }
     })
     .catch(e => {
       error.msg = 'Invalid credentials!';

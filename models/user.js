@@ -3,6 +3,8 @@ const validator = require('validator');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
+const { expirationTime } = require('../utility/expiration-time');
+
 const UserSchema = new mongoose.Schema({
   firstName: {
     type: String,
@@ -52,6 +54,10 @@ const UserSchema = new mongoose.Schema({
         required: true
       },
       token: {
+        type: String,
+        required: true
+      },
+      expTimeStamp: {
         type: String,
         required: true
       }
@@ -123,9 +129,22 @@ const UserSchema = new mongoose.Schema({
 UserSchema.methods.generateAuthToken = function() {
   const user = this;
   const access = 'Auth';
-  const token = jwt.sign({ _id: user._id.toHexString(), access }, process.env.JWT_SECRET).toString();
-  user.tokens = user.tokens.concat([{ access, token }]);
-  return user.save().then(() => token);
+  const currTimeStamp = new Date().getTime();
+  const expTimeStamp = new Date(currTimeStamp + expirationTime).getTime();
+  const token = jwt.sign({ _id: user._id.toHexString(), access, expTimeStamp }, process.env.JWT_SECRET).toString();
+  let tokens = [...user.tokens];
+  tokens.forEach(tok => {
+    if(parseInt(tok.expTimeStamp) <= currTimeStamp) {
+      tokens = tokens.filter(t => t._id !== tok._id);
+    }
+  });
+  if(tokens.length < 11) {
+    tokens = tokens.concat([{ access, token, expTimeStamp }]);
+    user.tokens = tokens;
+    return user.save().then(() => token);
+  } else {
+    return false;
+  }
 }
 
 UserSchema.methods.removeToken = function(token) {

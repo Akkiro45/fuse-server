@@ -1,8 +1,6 @@
 const _ = require('lodash');
 
 const pickData = (user) => {
-  // const resBody = _.pick(user, ['firstName', 'lastName', 'phoneNumber', 'email']);
-  // return { resBody };
   return _.pick(user, ['firstName', 'lastName', 'phoneNumber', 'email']);
 }
 
@@ -17,8 +15,29 @@ const generateResBody = (status, body) => {
     return { status: 'error', error: body };
 }
 
+const checkDomainName = (domain) => {
+  const list = [
+    'auth',
+    'auth/logout',
+    'auth/tandc/privacy-policy',
+    'auth/tandc',
+    'shop',
+    'shop/inventory',
+    'shop/profile',
+    'shop/orders',
+    'shop/create'
+  ]
+  for(let i=0; i<list.length; i++) {
+    if(domain === list[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 module.exports = {
   pickData,
   pickShopData,
-  generateResBody
+  generateResBody,
+  checkDomainName
 }
