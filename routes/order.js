@@ -171,7 +171,7 @@ router.post('/create-order', authenticate, (req, res) => {
   let resBody = {};
   let error = {};
   let result;
-  let shop, tempItems, items, temp;
+  let shop, tempItems, items, temp, itm, temp1;
   let body = _.pick(req.body, ['shopID', 'items']);
   if(!(body.shopID && body.items)) valid = valid && false;
   if(valid) {
@@ -180,29 +180,24 @@ router.post('/create-order', authenticate, (req, res) => {
         .lean()
         .select({ items: 1, shopName: 1, deliveryCharge: 1 })
         .then((shopItems) => {
-          tempItems = shopItems.items.filter((item1) => {
-            return body.items.some((item2) => {
-              return item1._id.toHexString() === item2.itemID;
-            });
-          });
+          tempItems = [];
+          for(let i=0; i<body.items.length; i++) {
+            itm = shopItems.items.find(im => im._id.toHexString() === body.items[i].itemID);
+            if(itm) {
+              temp1 = {...itm}
+              temp1.mValue = body.items[i].mValue;
+              temp1.quantity = body.items[i].quantity;
+              tempItems.push(temp1);
+              temp1 = null;
+            }
+          }
           if(tempItems.length === 0) {
             error.items = 'Can not create order with zero items';
             resBody.error = error;
             resBody.status = 'error';
             return res.status(400).send(resBody);
           }
-          items = _.map(tempItems, (item) => {
-            temp = body.items.find((itm) => {
-              return itm.itemID === item._id.toHexString();
-            })
-            if(temp.quantity) return _.extend({}, item, {quantity: temp.quantity});
-            else {
-              error.quantity = 'Item Quantity not specified';
-              resBody.error = error;
-              resBody.status = 'error';
-              throw resBody;
-            }
-          });
+          items = tempItems;
           result = calcCostAndQuan(items);
           body.quantity = result.quantity;
           body.totalCost = result.totalCost;
