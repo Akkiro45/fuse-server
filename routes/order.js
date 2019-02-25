@@ -171,7 +171,7 @@ router.post('/create-order', authenticate, (req, res) => {
   let resBody = {};
   let error = {};
   let result;
-  let shop, tempItems, items, temp, itm, temp1;
+  let shop, tempItems, items, temp, itm, temp1, temp2;
   let body = _.pick(req.body, ['shopID', 'items']);
   if(!(body.shopID && body.items)) valid = valid && false;
   if(valid) {
@@ -187,6 +187,13 @@ router.post('/create-order', authenticate, (req, res) => {
               temp1 = {...itm}
               temp1.mValue = body.items[i].mValue;
               temp1.quantity = body.items[i].quantity;
+              temp2 = null;
+              temp2 = temp1.mpValues.find(mpv => mpv.mValue === body.items[i].mValue);
+              if(temp2) {
+                temp1.price = temp2.price;
+              } else {
+                temp1.price = -1;
+              }
               tempItems.push(temp1);
               temp1 = null;
             }

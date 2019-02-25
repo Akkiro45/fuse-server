@@ -227,6 +227,80 @@ router.get('/get-inventory', authenticate, (req, res) => {
   }
 });
 
+// router.post('/edit-inventory/:type', authenticate, (req, res) => {
+//   let resBody = {};
+//   let error = {};
+//   let data = {};
+//   let categoryName = null;
+//   let flag = true;
+//   let body = _.pick(req.body, ['category', 'item', 'categoryID', 'itemID']);
+//   const type = req.params.type;
+//   if((type === '1' && !body.category) || (type === '2' && !body.item) || (type === '3' && !body.categoryID) || (type === '4' && !body.itemID) || (type === '5' && !body.item && !body.itemm._id)) {
+//     resBody.status = 'error';
+//     error.msg = 'Invalid data';
+//     resBody.error = error;
+//     return res.status(400).send(resBody);
+//   }
+//   if(req.shopID) {
+//     Shop.findById(req.shopID)
+//       .select({ items: 1, itemCategories: 1 })
+//       .then(response => {
+//         if(type === '1') {
+//           response.itemCategories.forEach(cat => {
+//             if(cat.category === body.category) flag = false;
+//           });
+//           if(flag)
+//             response.itemCategories.push({ category: body.category });
+//         } else if(type === '2') {
+//           response.items.push(body.item);
+//         } else if(type === '3') {
+//           response.itemCategories = response.itemCategories.filter(cat => {
+//             if(!new mongoose.mongo.ObjectId(body.categoryID).equals(cat._id)) {
+//               return true;
+//             } else {
+//               categoryName = cat.category;
+//               return false;
+//             }
+//           });
+//           response.items = response.items.filter(item => item.category !== categoryName);
+//         } else if(type === '4') {
+//           response.items = response.items.filter(item => !new mongoose.mongo.ObjectId(body.itemID).equals(item._id));
+//         } else if(type === '5') {
+//           let item = response.items.findIndex(item => new mongoose.mongo.ObjectId(body.itemID).equals(item._id));
+//           if(item !== -1) {
+//             response.items[item] = _.pick(body.item, ['name', 'category', 'mUnit', 'mValue', 'description', 'price', 'photo']);
+//           }
+//         }
+//         data = _.pick(response, ['items', 'itemCategories']);
+//         Shop.editShop(data, req.shopID)
+//           .then(shop => {
+//             resBody.data = _.pick(shop, ['items', 'itemCategories']);
+//             resBody.data.msg = 'Inventory updated!';
+//             resBody.status = 'ok';
+//             return res.send(resBody);
+//           })
+//           .catch(e => {
+//             error.msg = 'unable to update shop';
+//             // resBody.error = error;
+//             resBody.status = 'error';
+//             resBody.e = e.errmsg || null;
+//             return res.status(400).end(resBody);
+//           });
+//       })
+//       .catch(e => {
+//         error.msg = 'Unable to find shop!';
+//         resBody.error = error;
+//         resBody.status = 'error';
+//         return res.status(400).send(resBody);
+//       })
+//   } else {
+//     error.msg = 'No shop';
+//     resBody.error = error;
+//     resBody.status = 'error';
+//     return res.status(400).send(resBody);
+//   }
+// });
+
 router.post('/edit-inventory/:type', authenticate, (req, res) => {
   let resBody = {};
   let error = {};
@@ -268,7 +342,7 @@ router.post('/edit-inventory/:type', authenticate, (req, res) => {
         } else if(type === '5') {
           let item = response.items.findIndex(item => new mongoose.mongo.ObjectId(body.itemID).equals(item._id));
           if(item !== -1) {
-            response.items[item] = _.pick(body.item, ['name', 'category', 'mUnit', 'mValue', 'description', 'price', 'photo']);
+            response.items[item] = _.pick(body.item, ['name', 'category', 'mUnit', 'mpValues', 'description', 'photo']);
           }
         }
         data = _.pick(response, ['items', 'itemCategories']);

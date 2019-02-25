@@ -57,8 +57,14 @@ const ShopSchema = new mongoose.Schema({
       name: { type: String, required: true, trim: true },
       category: { type: String, required: true, trim: true },
       mUnit: { type: String, required: true, trim: true },
-      mValue: [],
-      price: { type: Number, required: true},
+      // mValue: [],
+      // price: { type: Number, required: true},
+      mpValues: [
+        {
+          mValue: { type: String, required: true, trim: true, default: 1 },
+          price: { type: Number, required: true }
+        }
+      ],
       photo: {
         name: { type: String, required: true },
         type: { type: String, required: true, trim: true}

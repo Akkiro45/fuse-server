@@ -138,7 +138,7 @@ UserSchema.methods.generateAuthToken = function() {
       tokens = tokens.filter(t => t._id !== tok._id);
     }
   });
-  if(tokens.length < 11) {
+  if(tokens.length < 10) {
     tokens = tokens.concat([{ access, token, expTimeStamp }]);
     user.tokens = tokens;
     return user.save().then(() => token);
