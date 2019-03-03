@@ -285,24 +285,17 @@ router.post('/shops', (req,res) => {
   if(body.delivery) {
     sort.isStatic = 1
   }
-  if(body.address) {
-    query.$text = { $search: body.address };
-  }
-  if(body.shopSrchName) {
-    // query.$text = { $search: body.shopSrchName };
-    query.shopSrchName = {
-      // $regex: new RegExp(body.shopSrchName.replace(/\s+/g,"\\s+"), "gi"),
-      $regex: new RegExp(body.shopSrchName, "gi"),
-      $options: 'i'
-    }
-    query.shopName = {
-      // $regex: new RegExp(body.shopSrchName.replace(/\s+/g,"\\s+"), "gi"),
-      $regex: new RegExp(body.shopSrchName, "gi"),
-      $options: 'i'
-    }
-  }
   if(body.shopCategories) {
     query['shopCategories.category'] = body.shopCategories;
+  }
+  if(body.shopSrchName) {
+    query.$or = [
+      { shopName: { $regex: body.shopSrchName , $options: "$i" }},
+      { shopSrchName: { $regex: body.shopSrchName , $options: "$i" }}
+    ]
+  }
+  if(body.district) {
+    query['shopAddress.city'] = body.district;
   }
   Shop.find(query)
     .sort(sort)
