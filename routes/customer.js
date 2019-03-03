@@ -205,21 +205,21 @@ router.get('/orders', authenticate, (req, res) => {
   const pageNumber = parseInt(req.query.pageNumber);
   const pageSize = parseInt(req.query.pageSize);
   let status = parseInt(req.query.status);
-  if(status === 0 || status === 1 || status > 7) status = 2;
+  if(status === 0 || status === 1 || status > 8) status = 2;
   if(status === 2) {
     query = {
       $eq: 2,
-      $nin: [3, 4, 5, 6]
+      $nin: [3, 4, 5, 6, 7]
     }
   } else if(status === 3 ) {
     query = {
       $eq: 3,
-      $nin: [5, 6]
+      $nin: [5, 6, 7]
     }
   } else if(status === 4 ) {
     query = {
       $eq: 4,
-      $nin: [3, 5, 6]
+      $nin: [3, 5, 6, 7]
     }
   } else if(status === 5 ) {
     query = {
@@ -230,6 +230,10 @@ router.get('/orders', authenticate, (req, res) => {
       $eq: 6
     }
   } else if(status === 7 ) {
+    query = {
+      $eq: 7
+    }
+  } else if(status === 8 ) {
     query = {
       $in: [2, 3, 4, 5, 6]
     }
@@ -289,7 +293,7 @@ router.post('/status', authenticate, orderChecker, (req, res) => {
   let error = {};
   let updateStatus = {};
   let allowCancelOrder;
-  let valid = true, ordered = false, cancelled = false, accepted = false, rejected = false, deliverd = false;
+  let valid = true, ordered = false, cancelled = false, accepted = false, rejected = false, deliverd = false, notdeliverd = false;
   if(body.orderID && body.type) {
     if(body.type === 4) {
       if(body.cancelOrder) {
@@ -314,12 +318,14 @@ router.post('/status', authenticate, orderChecker, (req, res) => {
           else if(s.type === 4) accepted = true;
           else if(s.type === 5) rejected = true;
           else if(s.type === 6) deliverd = true;
+          else if(s.type === 7) notdeliverd = true;
         });
         if(ordered && !cancelled) {
           updateStatus.$push = { status: { type: body.type, timeStamp: new Date().getTime() } };
           if(body.type === 4 && !accepted && !rejected && !deliverd) {
             updateStatus.$set = { deliveryTime: body.deliveryTime, allowCancelOrder };
           } else if(body.type === 5 && !accepted && !rejected && !deliverd) {
+          } else if(body.type === 7 && accepted && !cancelled && !rejected && !deliverd) {
           } else if(!(body.type === 6 && accepted && !rejected && !deliverd)) {
             error.msg = 'Inapropriate request';
             resBody.error = error;

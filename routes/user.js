@@ -382,7 +382,7 @@ router.get('/orders', authenticate, (req, res) => {
   let query = {
     userID: req.user._id,
     'status.type': {
-      $in: [2, 3, 4, 5, 6]
+      $in: [2, 3, 4, 5, 6, 7]
     }
   };
   let sort = {
