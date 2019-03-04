@@ -479,7 +479,7 @@ router.post('/status', authenticate, userOrderChecker, (req, res) => {
   let error = {};
   let valid = true;
   let updateStatus = {};
-  let removed = false, ordered = false, cancelled = false, deliverd = false, accepted = false, rejected = false;
+  let removed = false, ordered = false, cancelled = false, deliverd = false, notdelivered = false, accepted = false, rejected = false;
   if(!(body.type && body.orderID)) valid = valid && false;
   if(body.type === 2) {
     if(!body.addressID) valid = valid && false;
@@ -496,13 +496,14 @@ router.post('/status', authenticate, userOrderChecker, (req, res) => {
             else if(s.type === 6) deliverd = true;
             else if(s.type === 5) rejected = true;
             else if(s.type === 4) accepted = true;
+            else if(s.type === 7) notdelivered = true;
           });
           if((body.type === 1 && !removed && !ordered && !cancelled)) {
             updateStatus.$push = { status: { type: body.type, timeStamp: new Date().getTime() } };
           } else if(body.type === 2 && !removed && !ordered && !cancelled) {
               updateStatus.$push = { status: { type: body.type, timeStamp: new Date().getTime() } };
               updateStatus.addressID = body.addressID;
-          } else if(body.type === 3 && !removed && ordered && !cancelled && !deliverd && !rejected) {
+          } else if(body.type === 3 && !removed && ordered && !notdelivered && !cancelled && !deliverd && !rejected) {
             updateStatus.$push = { status: { type: body.type, timeStamp: new Date().getTime() } };
             if(accepted) {
               if(!order.allowCancelOrder) {
