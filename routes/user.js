@@ -57,7 +57,6 @@ router.post('/signup', (req, res) => {
                     'x-auth': token
                   }).send(resBody);
                 });
-              // return res.header('x-auth', token).send(resBody);
             })
             .catch(e => {
               error.e = e.errmsg;
@@ -69,7 +68,6 @@ router.post('/signup', (req, res) => {
         })
         .catch(e => {
           error.msg = 'User already exist';
-          // error.e = e.errmsg || e.message;
           resBody.error = error;
           resBody.status = 'error';
           return res.status(400).send(resBody);
@@ -165,23 +163,23 @@ router.delete('/logout/:sessionID', authenticate, (req, res) => {
       return res.status(400).send(resBody);
     });
 });
-
-router.patch('/change-password', authenticate, (req, res) => {
-  let resBody = {};
-  let error = {};
-  User.changePassword(req.user._id, req.body.newPassword, req.body.oldPassword)
-    .then(() => {
-      resBody.data = 'Password updated!';
-      resBody.status = 'ok';
-      return res.send(resBody);
-    })
-    .catch(e => {
-      error.msg = 'Unable to update password';
-      resBody.error = error;
-      resBody.status = 'error';
-      return res.status(400).send(resBody);
-    });
-});
+// ------------ change password --------------------
+// router.patch('/change-password', authenticate, (req, res) => {
+//   let resBody = {};
+//   let error = {};
+//   User.changePassword(req.user._id, req.body.newPassword, req.body.oldPassword)
+//     .then(() => {
+//       resBody.data = 'Password updated!';
+//       resBody.status = 'ok';
+//       return res.send(resBody);
+//     })
+//     .catch(e => {
+//       error.msg = 'Unable to update password';
+//       resBody.error = error;
+//       resBody.status = 'error';
+//       return res.status(400).send(resBody);
+//     });
+// });
 
 router.post('/add-address', authenticate, (req, res) => {
   let sessionID = req.body.sessionID;

@@ -41,8 +41,7 @@ const OrderSchama = new mongoose.Schema({
     required: true
   },
   addressID: {
-    type: mongoose.Schema.Types.ObjectId,
-    // required: true
+    type: mongoose.Schema.Types.ObjectId
   },
   items: [
     {

@@ -18,7 +18,6 @@ router.post('/upload', authenticate, (req, res) => {
     }
     resBody.status = 'ok';
     resBody.data = {
-      // imageUrl: req.file.location,
       name: req.file.key,
       type: req.file.mimetype
     }

@@ -31,7 +31,7 @@ router.post('/create-order', authenticate, (req, res) => {
               temp1 = {...itm}
               temp1.mValue = body.items[i].mValue;
               temp1.quantity = body.items[i].quantity;
-              temp2 = null;
+              temp2 = null; 
               temp2 = temp1.mpValues.find(mpv => mpv.mValue === body.items[i].mValue);
               if(temp2) {
                 temp1.price = temp2.price;
@@ -71,7 +71,6 @@ router.post('/create-order', authenticate, (req, res) => {
                       })
                         .then(rs => {
                           if(rs.ok === 1) {
-                            // resBody.data = order;
                             resBody.status = 'ok';
                             return res.send(resBody);
                           }

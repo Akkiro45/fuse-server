@@ -59,7 +59,6 @@ router.post('/signup', (req, res) => {
                 });
             })
             .catch(e => {
-              // error.e = e.errmsg;
               error.msg = 'Validation error.';
               resBody.error = error;
               resBody.status = 'error';
@@ -68,7 +67,6 @@ router.post('/signup', (req, res) => {
         })
         .catch(e => {
           error.msg = 'Already exist';
-          // error.e = e.errmsg || e.message;
           resBody.error = error;
           resBody.status = 'error';
           return res.status(400).send(resBody);
@@ -179,23 +177,23 @@ router.delete('/logout/:sessionID', authenticate, (req, res) => {
       return res.status(400).send(resBody);
     });
 });
-
-router.patch('/change-password', authenticate, (req, res) => {
-  let resBody = {};
-  let error = {};
-  Customer.changePassword(req.cust._id, req.body.newPassword, req.body.oldPassword)
-    .then(() => {
-      resBody.data = 'Password updated!';
-      resBody.status = 'ok';
-      return res.send(resBody);
-    })
-    .catch(e => {
-      error.msg = 'Unable to update password';
-      resBody.error = error;
-      resBody.status = 'error';
-      return res.status(400).send(resBody);
-    });
-});
+// ---------------------- change Password ----------------------
+// router.patch('/change-password', authenticate, (req, res) => {
+//   let resBody = {};
+//   let error = {};
+//   Customer.changePassword(req.cust._id, req.body.newPassword, req.body.oldPassword)
+//     .then(() => {
+//       resBody.data = 'Password updated!';
+//       resBody.status = 'ok';
+//       return res.send(resBody);
+//     })
+//     .catch(e => {
+//       error.msg = 'Unable to update password';
+//       resBody.error = error;
+//       resBody.status = 'error';
+//       return res.status(400).send(resBody);
+//     });
+// });
 
 router.get('/orders', authenticate, (req, res) => {
   let shopID;
@@ -235,17 +233,16 @@ router.get('/orders', authenticate, (req, res) => {
     }
   } else if(status === 8 ) {
     query = {
-      $in: [2, 3, 4, 5, 6]
+      $in: [2, 3, 4, 5, 6, 7]
     }
   }
   if(req.cust.shops.length !== 0) {
     shopID = req.cust.shops[0].shopID;
-    // Order.find({ shopID, 'status.type': { $nin: [1, 3, 4, 5, 6], $eq: 2 } }) // change status.type to orderd type
     Order.find({ shopID, 'status.type': query })
       .lean()
       .skip((pageNumber - 1) * pageSize)
       .limit(pageSize)
-      .select({ userID: 1, status: 1, totalCost: 1, quantity: 1, addressID: 1, items: 1, deliveryTime: 1, allowCancelOrder: 1 })
+      .select({ userID: 1, status: 1, totalCost: 1, quantity: 1, addressID: 1, items: 1, deliveryTime: 1, allowCancelOrder: 1, deliveryCharge: 1 })
       .sort({ 'status.timeStamp': -1 })
       .then(orders => {
         User.getData(orders)
@@ -260,7 +257,6 @@ router.get('/orders', authenticate, (req, res) => {
               order.phoneNumber = userData.phoneNumber
               return order;
             });
-            // resBody.data = orders;
             resBody.status = 'ok';
             return res.send(resBody);
           })
@@ -268,7 +264,6 @@ router.get('/orders', authenticate, (req, res) => {
             error.shop = 'Something went wrong!';
             resBody.error = error;
             resBody.status = 'error';
-            // resBody.e = e;
             return res.status(400).send(resBody);
           });
       })
