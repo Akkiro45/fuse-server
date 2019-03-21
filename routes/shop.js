@@ -269,7 +269,7 @@ router.post('/edit-inventory/:type', authenticate, (req, res) => {
         } else if(type === '5') {
           let item = response.items.findIndex(item => new mongoose.mongo.ObjectId(body.itemID).equals(item._id));
           if(item !== -1) {
-            response.items[item] = _.pick(body.item, ['name', 'category', 'mUnit', 'mpValues', 'description', 'photo']);
+            response.items[item] = _.pick(body.item, ['name', 'category', 'mUnit', 'mpValues', 'description', 'photo', 'outOfStock']);
           }
         }
         data = _.pick(response, ['items', 'itemCategories']);

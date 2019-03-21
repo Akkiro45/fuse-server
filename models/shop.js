@@ -70,6 +70,10 @@ const ShopSchema = new mongoose.Schema({
       description: {
         type: String,
         trim: true
+      },
+      outOfStock: {
+        type: Boolean,
+        default: false
       }
     }
   ],
