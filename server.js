@@ -12,6 +12,7 @@ const shopRoutes = require('./routes/shop');
 const orderRoutes = require('./routes/order');
 const sessionRoutes = require('./routes/session');
 const imgUploadRoutes = require('./routes/img-upload');
+const resetPassRoutes = require('./routes/resetpass');
 
 const app = express();
 const port = process.env.PORT;
@@ -28,6 +29,7 @@ app.use(`/${apiSecret}/shop`, shopRoutes);
 app.use(`/${apiSecret}/order`, orderRoutes);
 app.use(`/${apiSecret}/session`, sessionRoutes);
 app.use(`/${apiSecret}/img`, imgUploadRoutes);
+app.use(`/${apiSecret}/reset`, resetPassRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
