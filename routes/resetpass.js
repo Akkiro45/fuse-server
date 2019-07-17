@@ -117,38 +117,53 @@ router.patch('/password', (req, res) => {
       resBody.status = 'error';
       return res.status(400).send(resBody);
     }
-    let Model = User;
-    if(body.type === 'customer') {
-      Model = Customer;
-    }
-    Model.findById(decoded.userID)
-      .then(u => {
-        u.set({ password: body.password });
-        u.save()
-          .then(r => {
-            ResetPass.remove({ accID: decoded.userID })
-              .then(rs => {
-                resBody.status = 'ok';
-                return res.send(resBody);
+    ResetPass.findOne({ accID: decoded.userID })
+      .then(resetpass => {
+        if(!resetpass) {
+          error.msg = 'Invalid Token';
+          resBody.error = error;
+          resBody.status = 'error';
+          return res.status(404).send(resBody);
+        }
+        let Model = User;
+        if(body.type === 'customer') {
+          Model = Customer;
+        }
+        Model.findById(decoded.userID)
+          .then(u => {
+            u.set({ password: body.password });
+            u.save()
+              .then(r => {
+                ResetPass.remove({ accID: decoded.userID })
+                  .then(rs => {
+                    resBody.status = 'ok';
+                    return res.send(resBody);
+                  })
+                  .catch(e => {
+                    resBody.status = 'ok';
+                    return res.send(resBody);
+                  });
               })
               .catch(e => {
-                resBody.status = 'ok';
-                return res.send(resBody);
-              });
+                error.msg = 'Unable to update password';
+                resBody.error = error;
+                resBody.status = 'error';
+                return res.status(400).send(resBody);
+              })
           })
           .catch(e => {
-            error.msg = 'Unable to update password';
+            error.msg = 'Invalid User';
             resBody.error = error;
             resBody.status = 'error';
-            return res.status(400).send(resBody);
-          })
+            return res.status(404).send(resBody);
+          });
       })
       .catch(e => {
-        error.msg = 'Invalid User';
+        error.msg = 'Query error';
         resBody.error = error;
         resBody.status = 'error';
-        return res.status(404).send(resBody);
-      })
+        return res.status(400).send(resBody);
+      });
   });
 });
 
