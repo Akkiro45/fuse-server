@@ -8,9 +8,6 @@
     "PORT": 4000,
     "MONGODB_URI": "mongodb://localhost:27017/FuseApp",
     "JWT_SECRET": "asjsbjbgklqewtyhkjbedfljowji7gj",
-    "CLIENT_ID": "783921779376-7or8gqir2peh9jaf9sebh9t65lvt9ibs.apps.googleusercontent.com",
-    "CLIENT_SECRET": "enhaasvsfnB-ka4b2bZ7GH4b",
-    "REFRESH_TOKEN": "1/d9q3MArbgiQScY1-W9Wqg5jwoviAxhTN_GaVZutjQSc",
-    "ACCESS_TOKEN_GMAIL": "ya29.GltHB1oW1A0Mmn7EnWLv1GGtzrKu5nAgA3jWAxQ6Z-HWP6vlZrMRvT81ZYpw_OBwteVxSXTdIGouAl0ltUMoMt0CVcwz_JNG1mL3XhGIHgz_egdR_LEzMflWhDG5"
+    
   }
 }
