@@ -3,7 +3,7 @@ const validator = require('validator');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
-const { expirationTime } = require('../utility/expiration-time');
+const { expirationTime, expirationTimeForFreshToken } = require('../utility/expiration-time');
 
 const CustomerSchema = new mongoose.Schema({
   firstName: {
@@ -63,6 +63,18 @@ const CustomerSchema = new mongoose.Schema({
       }
     }
   ],
+  refreshTokens: [
+    {
+      token: {
+        type: String,
+        required: true
+      },
+      expTimeStamp: {
+        type: String,
+        required: true
+      }
+    }
+  ],
   shops: [
     {
       shopID: {
@@ -73,26 +85,79 @@ const CustomerSchema = new mongoose.Schema({
   ]
 });
 
-CustomerSchema.methods.generateAuthToken = function() {
+// CustomerSchema.methods.generateAuthToken = function() {
+//   const cust = this;
+//   const access = 'Auth';
+//   const currTimeStamp = new Date().getTime();
+//   const expTimeStamp = new Date(currTimeStamp + expirationTime).getTime();
+//   const token = jwt.sign({ _id: cust._id.toHexString(), access, expTimeStamp }, process.env.JWT_SECRET).toString();
+//   let tokens = [...cust.tokens];
+//   tokens.forEach(tok => {
+//     if(parseInt(tok.expTimeStamp) <= currTimeStamp) {
+//       tokens = tokens.filter(t => t._id !== tok._id);
+//     }
+//   });
+//   if(tokens.length < 10) {
+//     tokens = tokens.concat([{ access, token, expTimeStamp }]);
+//     cust.tokens = tokens;
+//     return cust.save().then(() => token);
+//   } else {
+//     return false;
+//   }
+// }
+
+// ----------------------
+
+CustomerSchema.methods.generateAuthToken = function(oldRefToken) {
   const cust = this;
   const access = 'Auth';
+  const rAccess = 'Refresh-Token'
   const currTimeStamp = new Date().getTime();
   const expTimeStamp = new Date(currTimeStamp + expirationTime).getTime();
+  const expTimeStampR = new Date(currTimeStamp + expirationTimeForFreshToken).getTime();
+
   const token = jwt.sign({ _id: cust._id.toHexString(), access, expTimeStamp }, process.env.JWT_SECRET).toString();
+  const refreshToken = jwt.sign({ rAccess, expTimeStampR }, process.env.JWT_SECRET).toString();
+
+
   let tokens = [...cust.tokens];
   tokens.forEach(tok => {
     if(parseInt(tok.expTimeStamp) <= currTimeStamp) {
       tokens = tokens.filter(t => t._id !== tok._id);
     }
   });
+
+  let refreshTokens = [...cust.refreshTokens];
+  if(oldRefToken) {
+    refreshTokens = refreshTokens.filter(t => t.token !== oldRefToken);
+  }
+  refreshTokens.forEach(tok => {
+    if(parseInt(tok.expTimeStamp) <= currTimeStamp) {
+      refreshTokens = refreshTokens.filter(t => t._id !== tok._id);
+    }
+  });
   if(tokens.length < 10) {
     tokens = tokens.concat([{ access, token, expTimeStamp }]);
+    refreshTokens = refreshTokens.concat([{ token: refreshToken, expTimeStamp: expTimeStampR }]);
     cust.tokens = tokens;
-    return cust.save().then(() => token);
+    cust.refreshTokens = refreshTokens;
+    const res = {
+      authToken: {
+        token,
+        expirationTime: expTimeStamp
+      },
+      refreshToken: {
+        token: refreshToken,
+        expirationTime: expTimeStampR
+      }
+    }
+    return cust.save().then(() => { return res });
   } else {
     return false;
   }
 }
+
+// ----------------------
 
 CustomerSchema.methods.removeToken = function(token) {
   const cust = this;

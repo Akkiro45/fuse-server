@@ -15,6 +15,148 @@ const {pickData, pickShopData} = require('./../utility/utility');
 const router = express.Router();
 
 // /customers
+// router.post('/signup', (req, res) => {
+//   let resBody = {};
+//   let error = {};
+//   let data = {};
+//   let body = _.pick(req.body, ['firstName', 'lastName', 'phoneNumber', 'email', 'password']);
+//   data = _.pick(body, ['firstName', 'lastName', 'phoneNumber', 'email']);
+//   if(body.password && body.phoneNumber) {
+//     let isEmail = false;
+//     let isNumber = false;
+//     if(body.email) {
+//       isEmail = emailVerification(body.email);
+//     }
+//     isNumber = numberVerification(body.phoneNumber);
+//     if(!(body.phoneNumber.toString().length === 10)) isNumber = false;
+//     if(isEmail === true && isNumber === true) {
+//       body.createdAt = new Date().getTime();
+//       const cust = new Customer(body);
+//       cust.save()
+//         .then((customer) => {
+//           cust.generateAuthToken()
+//             .then((token) => {
+//               resBody.status = 'ok';
+//               resBody.data = pickData(cust);
+//               data.token = token;
+//               data.custID = customer._id;
+//               resBody.data.custID = customer._id;
+//               Session.saveSession(data)
+//                 .then(ss => {
+//                   resBody.sessionID = ss._id;
+//                   return res.set({
+//                     'Access-Control-Expose-Headers': 'x-auth',
+//                     'x-auth': token
+//                   }).send(resBody);
+//                 })
+//                 .catch(e => {
+//                   error.msg = 'Unable to save session';
+//                   resBody.error = error;
+//                   return res.set({
+//                     'Access-Control-Expose-Headers': 'x-auth',
+//                     'x-auth': token
+//                   }).send(resBody);
+//                 });
+//             })
+//             .catch(e => {
+//               error.msg = 'Validation error.';
+//               resBody.error = error;
+//               resBody.status = 'error';
+//               return res.status(400).send(resBody);
+//             });
+//         })
+//         .catch(e => {
+//           error.msg = 'Already exist';
+//           resBody.error = error;
+//           resBody.status = 'error';
+//           return res.status(400).send(resBody);
+//         });
+//     } else {
+//       error.msg = 'Invalid Email id or Phone number!';
+//       resBody.error = error;
+//       resBody.status = 'error';
+//       return res.status(400).send(resBody);
+//     }
+//   } else {
+//     error.msg = 'Invalid data.';
+//     resBody.error = error;
+//     resBody.status - 'error';
+//     return res.status(400).send(resBody);
+//   }
+// });
+//
+// router.post('/login', (req, res) => {
+//   const body = _.pick(req.body, ['email', 'phoneNumber', 'password']);
+//   let byEmail = false;
+//   let param = body.phoneNumber;
+//   let resBody = {};
+//   let error = {};
+//   let data = {};
+//   if(body.email) {
+//     byEmail = true;
+//     param = body.email;
+//   }
+//   Customer.findByCredentials(param, body.password, byEmail)
+//     .then(cust => {
+//       resBody.status = 'ok';
+//       resBody.data = pickData(cust);
+//       resBody.data.custID = cust._id;
+//       data = {...resBody.data};
+//       data.custID = cust._id;
+//       if(cust.shops.length !== 0) {
+//         Shop.findById(cust.shops[0].shopID)
+//           .select({ shopName: 1, isStatic: 1 })
+//           .then(s => {
+//             if(s) {
+//               resBody.data.shop = pickShopData(s);
+//               data.shop = resBody.data.shop;
+//             }
+//             else resBody.data.shop = 'Shop not found!';
+//           })
+//           .catch(e => {
+//             resBody.data.shop = 'Unable to find shop';
+//           })
+//       } else {
+//         resBody.data.shop = 'Shop not found!';
+//       }
+//       return cust.generateAuthToken()
+//     })
+//     .then(token => {
+//       if(token) {
+//         data.token = token;
+//         Session.saveSession(data)
+//           .then(ss => {
+//             resBody.sessionID = ss._id;
+//             return res.set({
+//               'Access-Control-Expose-Headers': 'x-auth',
+//               'x-auth': token
+//             }).send(resBody);
+//           })
+//           .catch(e => {
+//             error.msg = 'Unable to save session';
+//             resBody.error = error;
+//             return res.set({
+//               'Access-Control-Expose-Headers': 'x-auth',
+//               'x-auth': token
+//             }).send(resBody);
+//           });
+//       } else {
+//         error.msg = 'More than 10 Concurrent user!';
+//         resBody.status = 'error';
+//         resBody.error = error;
+//         return res.status(400).send(resBody);
+//       }
+//     })
+//     .catch(e => {
+//       error.msg = 'Invalid credentials!';
+//       resBody.error = error;
+//       resBody.status = 'error';
+//       return res.status(400).send(resBody);
+//     });
+// });
+
+// ------------------------------------
+
 router.post('/signup', (req, res) => {
   let resBody = {};
   let error = {};
@@ -35,10 +177,15 @@ router.post('/signup', (req, res) => {
       cust.save()
         .then((customer) => {
           cust.generateAuthToken()
-            .then((token) => {
+            .then((tokens) => {
               resBody.status = 'ok';
+              resBody.refreshToken = tokens.refreshToken.token;
+              resBody.expirationTime = {
+                authToken: tokens.authToken.expirationTime,
+                refreshToken: tokens.refreshToken.expirationTime
+              }
               resBody.data = pickData(cust);
-              data.token = token;
+              data.token = tokens.authToken.token;
               data.custID = customer._id;
               resBody.data.custID = customer._id;
               Session.saveSession(data)
@@ -46,7 +193,7 @@ router.post('/signup', (req, res) => {
                   resBody.sessionID = ss._id;
                   return res.set({
                     'Access-Control-Expose-Headers': 'x-auth',
-                    'x-auth': token
+                    'x-auth': tokens.authToken.token
                   }).send(resBody);
                 })
                 .catch(e => {
@@ -54,7 +201,7 @@ router.post('/signup', (req, res) => {
                   resBody.error = error;
                   return res.set({
                     'Access-Control-Expose-Headers': 'x-auth',
-                    'x-auth': token
+                    'x-auth': tokens.authToken.token
                   }).send(resBody);
                 });
             })
@@ -80,7 +227,7 @@ router.post('/signup', (req, res) => {
   } else {
     error.msg = 'Invalid data.';
     resBody.error = error;
-    resBody.status - 'error';
+    resBody.status = 'error';
     return res.status(400).send(resBody);
   }
 });
@@ -121,15 +268,20 @@ router.post('/login', (req, res) => {
       }
       return cust.generateAuthToken()
     })
-    .then(token => {
-      if(token) {
-        data.token = token;
+    .then(tokens => {
+      if(tokens) {
+        data.token = tokens.authToken.token;
+        resBody.refreshToken = tokens.refreshToken.token;
+        resBody.expirationTime = {
+          authToken: tokens.authToken.expirationTime,
+          refreshToken: tokens.refreshToken.expirationTime
+        }
         Session.saveSession(data)
           .then(ss => {
             resBody.sessionID = ss._id;
             return res.set({
               'Access-Control-Expose-Headers': 'x-auth',
-              'x-auth': token
+              'x-auth': tokens.authToken.token
             }).send(resBody);
           })
           .catch(e => {
@@ -137,7 +289,7 @@ router.post('/login', (req, res) => {
             resBody.error = error;
             return res.set({
               'Access-Control-Expose-Headers': 'x-auth',
-              'x-auth': token
+              'x-auth': tokens.authToken.token
             }).send(resBody);
           });
       } else {
@@ -154,6 +306,46 @@ router.post('/login', (req, res) => {
       return res.status(400).send(resBody);
     });
 });
+
+router.post('/get-token', (req, res) => {
+  const custID = req.body.custID;
+  const refToken = req.header('x-refresh-token');
+  let resBody = {};
+  let error = {};
+  Customer.findOne({ _id: custID, 'refreshTokens.token': refToken })
+    .then(cust => {
+      return cust.generateAuthToken(refToken);
+    })
+    .then(tokens => {
+      if(tokens) {
+        resBody.status = 'ok';
+        resBody.data = {
+          refreshToken: tokens.refreshToken.token,
+          expirationTime: {
+            authToken: tokens.authToken.expirationTime,
+            refreshToken: tokens.refreshToken.expirationTime
+          }
+        }
+        return res.set({
+          'Access-Control-Expose-Headers': 'x-auth',
+          'x-auth': tokens.authToken.token
+        }).send(resBody);
+      } else {
+        error.msg = 'More than 10 Concurrent user!';
+        resBody.status = 'error';
+        resBody.error = error;
+        return res.status(400).send(resBody);
+      }
+    })
+    .catch(e => {
+      resBody.status = 'error';
+      error.msg = 'Invalid user!';
+      resBody.error = error;
+      return res.status(400).send(resBody);
+    });
+});
+
+// ------------------------------------
 
 router.get('/me', authenticate, (req, res) => {
   let resBody = {};
