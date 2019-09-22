@@ -7,7 +7,6 @@
   "development": {
     "PORT": 4000,
     "MONGODB_URI": "mongodb://localhost:27017/FuseApp",
-    "JWT_SECRET": "asjsbjbgklqewtyhkjbedfljowji7gj",
-    
+    "JWT_SECRET": "asjsbjbgklqewtyhkjbedfljowji7gj"
   }
 }

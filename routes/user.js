@@ -279,7 +279,9 @@ router.post('/shops', (req,res) => {
   let query = {
     status: true
   };
-  let sort = {};
+  let sort = {
+    items: -1
+  };
   if(body.delivery) {
     sort.isStatic = 1
   }
