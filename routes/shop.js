@@ -281,11 +281,12 @@ router.post('/edit-inventory/:type', authenticate, (req, res) => {
             return res.send(resBody);
           })
           .catch(e => {
+            console.log(e);
             error.msg = 'unable to update shop';
             // resBody.error = error;
             resBody.status = 'error';
             resBody.e = e.errmsg || null;
-            return res.status(400).end(resBody);
+            return res.status(400).send(resBody);
           });
       })
       .catch(e => {

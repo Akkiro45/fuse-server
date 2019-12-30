@@ -12,6 +12,7 @@ const shopRoutes = require('./routes/shop');
 const orderRoutes = require('./routes/order');
 const sessionRoutes = require('./routes/session');
 const imgUploadRoutes = require('./routes/img-upload');
+const imgUploadCDRoutes = require('./routes/img-upload-cd');
 const resetPassRoutes = require('./routes/resetpass');
 
 const app = express();
@@ -28,7 +29,8 @@ app.use(`/${apiSecret}/customer`, customerRoutes);
 app.use(`/${apiSecret}/shop`, shopRoutes);
 app.use(`/${apiSecret}/order`, orderRoutes);
 app.use(`/${apiSecret}/session`, sessionRoutes);
-app.use(`/${apiSecret}/img`, imgUploadRoutes);
+// app.use(`/${apiSecret}/img`, imgUploadRoutes);
+app.use(`/${apiSecret}/img`, imgUploadCDRoutes);
 app.use(`/${apiSecret}/reset`, resetPassRoutes);
 
 app.listen(port, () => {
