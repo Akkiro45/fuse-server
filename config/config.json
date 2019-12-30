@@ -7,9 +7,6 @@
   "development": {
     "PORT": 4000,
     "MONGODB_URI": "mongodb://localhost:27017/FuseApp",
-    "JWT_SECRET": "asjsbjbgklqewtyhkjbedfljowji7gj",
-    "CLOUD_NAME": "fuse-official",
-    "CD_API_KEY": "593765171932443",
-    "CD_API_SECRET": "V9sLxtNgy8pG8YNndaZV0PStXRI"
+    "JWT_SECRET": "asjsbjbgklqewtyhkjbedfljowji7gj"
   }
 }
