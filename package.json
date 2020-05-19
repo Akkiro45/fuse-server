@@ -24,7 +24,7 @@
     "googleapis": "^41.0.0",
     "helmet": "^3.15.0",
     "jsonwebtoken": "^8.3.0",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.13",
     "mongodb": "^3.1.8",
     "mongoose": "^4.8.0",
     "multer": "^1.4.1",
